@@ -211,4 +211,4 @@ def logout(current_user: dict = Depends(get_current_user)):
 
             del token_user[token]
             break
-    return {"message": f"See you, {current_user['name']}! You logged out."}
+    return {"message": f"See you, {current_user.name}! You logged out."}
