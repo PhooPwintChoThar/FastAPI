@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from random import randint
 import bcrypt
 from pydantic import BaseModel
-
+from fastapi.responses import HTMLResponse
 from fastapi import Header
 
 from fastapi import Depends, HTTPException, Header
@@ -185,14 +185,21 @@ def login(id: int = Body(...), password: str = Body(...)):
 
 
 @app.post("/student/enroll")
-async def enroll_course(id:int=Body(), name:str=Body(), credit:int=Body(), current_user: dict = Depends(get_current_user)):
-    for enrolled_course in current_user["enroll"]:
-        if enrolled_course["id"] == id:
+async def enroll_course(id:int=Body(), score:int=Body(),current_user: dict = Depends(get_current_user)):
+    for enrolled_course in current_user.enrolls:
+        if enrolled_course.course.id == id:
             raise HTTPException(status_code=400, detail="Course already enrolled")
 
-    current_user["enroll"].append(Course(id, name, credit))  # Add the new course to the student's enrollment
-    c=Course(id, name, credit)
-    return {"detail": "Course enrolled successfully", "course":c.getDetail() }
+    students=root.students
+    student=students[current_user.id]
+    courses=root.courses
+    course=courses[id]
+    if not course:
+        raise HTTPException(status_code=400, detail="Course not exists")
+    student.enrollCourse(course)
+    enro=student.getEnrollment(course)
+    enro.setScore(score)
+    return {"detail": "Course enrolled successfully", "course":course.getDetail() }
 
 @app.get("/student/enrollinfo")
 async def show_enroll_info(current_user: dict = Depends(get_current_user)):
@@ -212,3 +219,54 @@ def logout(current_user: dict = Depends(get_current_user)):
             del token_user[token]
             break
     return {"message": f"See you, {current_user.name}! You logged out."}
+
+
+
+@app.get('/course')
+def show_all_courses():
+    result= {}
+    courses=root.courses
+    for course in courses:
+        temp=courses[course]
+        result[course]=temp.getDetail()
+    return result
+
+@app.get('/course/html', response_class=HTMLResponse)
+def show_html():
+    courses=root.courses
+    content=""" <html><head></head><body><table>"""
+
+    for course in courses:
+        temp=courses[course]
+        content+="""<tr><td>"""+str(course)+"""</td><td>"""+temp.name+"""</td><td>"""+str(temp.credit)+"""</td></tr>"""
+    content+="""</table></body></html>"""
+    return content
+
+
+@app.post("/course/new")
+async def add_new_course(id:int=Body(), name:str=Body(), credit:int=Body()):
+    course_db=root.courses
+    if id in course_db:
+        raise HTTPException(status_code=400, detail="Course already exists")
+    course_db[id]=Course(id, name, credit)
+    transaction.commit()
+    temp=course_db[id].getDetail()
+    return temp
+
+@app.get('/student/transcript/html', response_class=HTMLResponse)
+def show_t(current_user: dict = Depends(get_current_user)):
+    content=""" <html><head></head><body><p>ID : """+str(current_user.id)+"""</p><p>Name:"""+current_user.name+"""</p><table>"""
+
+    for e in current_user.enrolls:
+        content+="""<tr><td>"""+str(e.course.id)+"""</td><td>"""+str(e.course.name)+"""</td><td>"""+str(e.course.credit)+"""</td><td>"""+str(e.score)+"""</td><td>"""+str(e.getGrade())+"""</td></tr>"""
+    content+="""</table><p>GPA:"""
+    content+=str(current_user.getGPA())+ """</p></body></html>"""
+    return content
+
+@app.get('/student/transcript', response_class=HTMLResponse)
+def show_t(current_user: dict = Depends(get_current_user)):
+    students=root.students
+    s=students[current_user.id]
+    if s:
+        return s.getT()
+    
