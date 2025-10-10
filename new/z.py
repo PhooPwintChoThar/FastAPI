@@ -102,6 +102,37 @@ class Student (persistent.Persistent):
 
         gpa=t_gpa/t_credit
         print(f"Total GPA is: {gpa:.2f}")
+    def getT(self):
+        enrolls=[]
+        for e in self.enrolls:
+            enrolls.append(e.getDetail())
+        return {"id":self.id, "name":self.name, "enroll":enrolls, "gpa":self.getGPA()}
+    
+    def getGPA(self):
+        t_credit=0
+        t_gpa=0
+        for e in self.enrolls:
+            course=e.getCourse()
+            credit=course.getCredit()
+            t_credit+=credit
+            grade=e.getGrade()
+            if( grade == 'A') :
+                t_gpa+=4*credit
+            elif(grade == 'B+'):
+                t_gpa+=3.5*credit
+            elif(grade == 'B'):
+                t_gpa+=3*credit
+            elif(grade == 'C+'):
+                t_gpa+=2.5*credit
+            elif(grade == 'C'):
+                t_gpa+=2*credit
+            elif(grade == 'D+'):
+                t_gpa+=1.5*credit
+            elif(grade == 'D'):
+                t_gpa+=1*credit
+
+        return f"{t_gpa/t_credit:.2f}"
+
 
     def setName(self, name):
         self.name=name
@@ -142,7 +173,7 @@ class Enrollment (persistent.Persistent):
         return self.course.scoreGrading(self.score)
  
     def getDetail(self):
-       return {"id":self.course.id, "name":self.course.name,"credit" :self.course.getCredit(), "score":self.score}
+       return {"id":self.course.id, "name":self.course.name,"credit" :self.course.getCredit(), "score":self.score, "grade":self.getGrade()}
     
     def printDetail(self):
         print(f"\n\n{self.student.name}'s Enrollment :")
