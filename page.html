@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Student Info</title>
+    </head>
+    <body>
+        <h1 style="color:blue; text-align:center;">My Student Info</h1>
+        <h4>Student ID : {{id}}</h4>
+        <h4>name : {{name}}</h4>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Name</th><th>Credits</th><th>Score</th></tr>
+            </thead>
+            <tbody>
+                {%for course in courses%}
+                <tr><td>{{course}}</td><td>{{courses[course][0]}}</td><td>{{courses[course][1]}}<td>{{courses[course][2]}}</td></td></tr>
+                {%endfor%}
+            </tbody>
+            
+        </table>
+        <h3>Check Grade</h3>
+            <input type="text" placeholder="Course ID", id="course">
+            <button type="button" onclick="checkDigit()">Check</button>
+        <script src="{{url_for('static', path='script.js')}}"></script>
+    </body>
+</html>
